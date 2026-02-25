@@ -1,0 +1,37 @@
+name: Deploy TaskFlow (2 EC2)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via Bastion
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PUBLIC_EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "Clone or update repo"
+            cd ~/taskflow || git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git ~/taskflow
+            cd ~/taskflow
+            git pull
+
+            echo "Deploy frontend (public EC2)"
+            docker compose down
+            docker compose up -d --build frontend
+
+            echo "Deploy backend (private EC2)"
+            ssh -o StrictHostKeyChecking=no ubuntu@PRIVATE_EC2_IP << 'EOF'
+              cd ~/taskflow || git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git ~/taskflow
+              cd ~/taskflow
+              git pull
+              docker compose down
+              docker compose up -d --build backend
+            EOF
