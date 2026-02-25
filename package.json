@@ -1,0 +1,17 @@
+{
+  "name": "taskflow",
+  "version": "1.0.0",
+  "description": "Full-stack Todo App — React CRA + Node/Express + AWS RDS + S3",
+  "private": true,
+  "scripts": {
+    "install:all":  "npm install && cd server && npm install && cd ../client && npm install",
+    "dev":          "concurrently \"npm run server\" \"npm run client\" --names \"API,APP\" --prefix-colors \"cyan,yellow\"",
+    "server":       "cd server && npm run dev",
+    "client":       "cd client && npm start",
+    "build":        "cd client && npm run build",
+    "start":        "cd server && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
