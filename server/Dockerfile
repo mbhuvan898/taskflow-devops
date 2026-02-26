@@ -8,7 +8,9 @@ RUN npm ci
 
 # Copy the rest of the application (ignoring local node_modules via .dockerignore)
 COPY . .
-RUN npm run build
+# Replace "RUN npm run build" with this:
+RUN node node_modules/react-scripts/bin/react-scripts.js build
+
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
