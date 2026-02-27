@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { NavLink } from 'react-router-dom';
 import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -29,6 +30,7 @@ export default function AnalyticsPage() {
   const [data, setData]   = useState(null);
   const [cats, setCats]   = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([analyticsAPI.dashboard(), catsAPI.list()])
@@ -38,7 +40,7 @@ export default function AnalyticsPage() {
 
   if (loading) return (
     <div className="layout">
-      <Sidebar categories={[]} onAddCat={() => {}} />
+      <Sidebar categories={[]} onAddCat={() => {}} open={false} onClose={() => {}} />
       <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
         <div className="spinner" style={{ width:36,height:36 }} />
       </div>
@@ -55,12 +57,15 @@ export default function AnalyticsPage() {
 
   return (
     <div className="layout">
-      <Sidebar categories={cats} onAddCat={() => {}} />
+      <Sidebar categories={cats} onAddCat={() => {}} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main page">
         <div className="page-header">
-          <div>
-            <h1 className="page-title">Analytics</h1>
-            <p className="page-sub">Your productivity at a glance</p>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">☰</button>
+            <div>
+              <h1 className="page-title">Analytics</h1>
+              <p className="page-sub">Your productivity at a glance</p>
+            </div>
           </div>
         </div>
 
@@ -201,6 +206,13 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </main>
+      <nav className="mobile-bottom-nav">
+        <nav>
+          <NavLink to="/" end><span className="nav-icon">📋</span>Tasks</NavLink>
+          <NavLink to="/analytics"><span className="nav-icon">📊</span>Analytics</NavLink>
+          <NavLink to="/profile"><span className="nav-icon">👤</span>Profile</NavLink>
+        </nav>
+      </nav>
     </div>
   );
 }

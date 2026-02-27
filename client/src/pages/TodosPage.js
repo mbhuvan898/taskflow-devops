@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, NavLink } from 'react-router-dom';
 import { todosAPI, catsAPI } from '../utils/api';
 import { useToast } from '../context/ToastContext';
-import Sidebar      from '../components/Sidebar';
-import TodoCard     from '../components/TodoCard';
-import TodoModal    from '../components/TodoModal';
+import Sidebar       from '../components/Sidebar';
+import TodoCard      from '../components/TodoCard';
+import TodoModal     from '../components/TodoModal';
 import CategoryModal from '../components/CategoryModal';
 
 const SORTS = [
@@ -22,6 +22,7 @@ export default function TodosPage() {
   const [showCat,    setShowCat]    = useState(false);
   const [editTodo,   setEditTodo]   = useState(null);
   const [total,      setTotal]      = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [params,     setParams]     = useSearchParams();
   const { toast } = useToast();
 
@@ -86,18 +87,31 @@ export default function TodosPage() {
 
   return (
     <div className="layout">
-      <Sidebar categories={cats} onAddCat={() => setShowCat(true)} />
+      <Sidebar
+        categories={cats}
+        onAddCat={() => setShowCat(true)}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <main className="main page">
         {/* Header */}
         <div className="page-header">
-          <div>
-            <h1 className="page-title">My Tasks</h1>
-            <p className="page-sub">
-              <span style={{ color:'var(--lime)', fontFamily:'var(--mono)' }}>{active}</span> active ·{' '}
-              <span style={{ fontFamily:'var(--mono)' }}>{done}</span> done ·{' '}
-              <span style={{ fontFamily:'var(--mono)' }}>{total}</span> total
-            </p>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            {/* Hamburger — hidden on desktop via CSS */}
+            <button
+              className="mobile-menu-btn"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+            >☰</button>
+            <div>
+              <h1 className="page-title">My Tasks</h1>
+              <p className="page-sub">
+                <span style={{ color:'var(--lime)', fontFamily:'var(--mono)' }}>{active}</span> active ·{' '}
+                <span style={{ fontFamily:'var(--mono)' }}>{done}</span> done ·{' '}
+                <span style={{ fontFamily:'var(--mono)' }}>{total}</span> total
+              </p>
+            </div>
           </div>
           <button className="btn btn-primary" onClick={openNew}>＋ New Task</button>
         </div>
@@ -105,14 +119,14 @@ export default function TodosPage() {
         {/* Controls */}
         <div style={{ display:'flex', gap:10, marginBottom:22, flexWrap:'wrap', alignItems:'center' }}>
           {/* Search */}
-          <div style={{ position:'relative', flex:'1 1 200px', minWidth:180 }}>
+          <div style={{ position:'relative', flex:'1 1 200px', minWidth:160 }}>
             <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none', fontSize:'.9rem' }}>🔍</span>
             <input style={{ paddingLeft:36 }} type="text" placeholder="Search tasks…"
               value={search} onChange={e => setP('search', e.target.value)} />
           </div>
 
           {/* Filter tabs */}
-          <div style={{ display:'flex', gap:4 }}>
+          <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
             {['all','active','done','overdue'].map(f => (
               <button key={f} onClick={() => setP('filter',f)}
                 style={{
@@ -129,7 +143,7 @@ export default function TodosPage() {
           </div>
 
           {/* Sort */}
-          <select style={{ width:'auto', minWidth:140 }} value={sort} onChange={e => setP('sort',e.target.value)}>
+          <select style={{ width:'auto', minWidth:130 }} value={sort} onChange={e => setP('sort',e.target.value)}>
             {SORTS.map(s => <option key={s.v} value={s.v}>{s.l}</option>)}
           </select>
         </div>
@@ -156,6 +170,21 @@ export default function TodosPage() {
           </div>
         )}
       </main>
+
+      {/* Mobile bottom nav */}
+      <nav className="mobile-bottom-nav">
+        <nav>
+          <NavLink to="/" end>
+            <span className="nav-icon">📋</span>Tasks
+          </NavLink>
+          <NavLink to="/analytics">
+            <span className="nav-icon">📊</span>Analytics
+          </NavLink>
+          <NavLink to="/profile">
+            <span className="nav-icon">👤</span>Profile
+          </NavLink>
+        </nav>
+      </nav>
 
       {showTodo && (
         <TodoModal todo={editTodo} categories={cats}

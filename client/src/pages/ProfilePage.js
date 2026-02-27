@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { authAPI, catsAPI } from '../utils/api';
@@ -8,6 +9,7 @@ export default function ProfilePage() {
   const { user, refresh } = useAuth();
   const { toast }         = useToast();
   const [cats, setCats]   = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef();
 
@@ -36,12 +38,15 @@ export default function ProfilePage() {
 
   return (
     <div className="layout">
-      <Sidebar categories={cats} onAddCat={() => {}} />
+      <Sidebar categories={cats} onAddCat={() => {}} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main page" style={{ maxWidth:680 }}>
         <div className="page-header">
-          <div>
-            <h1 className="page-title">Profile</h1>
-            <p className="page-sub">Manage your account and categories</p>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">☰</button>
+            <div>
+              <h1 className="page-title">Profile</h1>
+              <p className="page-sub">Manage your account and categories</p>
+            </div>
           </div>
         </div>
 
@@ -109,7 +114,31 @@ export default function ProfilePage() {
             </div>
           ))}
         </div>
+
+        {/* AWS info */}
+        <div className="card fade-up" style={{ background:'rgba(212,242,68,.04)', borderColor:'rgba(212,242,68,.18)' }}>
+          <div className="card-title" style={{ color:'var(--lime)' }}>☁️ AWS Integration Status</div>
+          <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
+            {[
+              ['Database',     'Amazon RDS (PostgreSQL)', 'var(--emerald)'],
+              ['File Storage', 'Amazon S3',               'var(--sky)'],
+              ['Auth',         'JWT + bcrypt',            'var(--violet)'],
+            ].map(([l,v,c]) => (
+              <div key={l}>
+                <div style={{ fontSize:'.65rem', color:'var(--text3)', letterSpacing:'.06em', textTransform:'uppercase', marginBottom:3 }}>{l}</div>
+                <div style={{ fontFamily:'var(--mono)', fontSize:'.82rem', color:c }}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
+      <nav className="mobile-bottom-nav">
+        <nav>
+          <NavLink to="/" end><span className="nav-icon">📋</span>Tasks</NavLink>
+          <NavLink to="/analytics"><span className="nav-icon">📊</span>Analytics</NavLink>
+          <NavLink to="/profile"><span className="nav-icon">👤</span>Profile</NavLink>
+        </nav>
+      </nav>
     </div>
   );
 }
