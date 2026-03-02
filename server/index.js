@@ -13,6 +13,7 @@ const catRoutes   = require('./routes/categories');
 const analRoutes  = require('./routes/analytics');
 
 const app = express();
+app.set('trust proxy', 1);
 
 /* ── Security ─────────────────────────────────── */
 app.use(helmet({ contentSecurityPolicy: false }));
