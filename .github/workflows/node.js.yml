@@ -7,10 +7,9 @@ on:
 
 jobs:
 
-  # ─────────────────────────────
-  # FRONTEND → S3 + CloudFront
-  # ─────────────────────────────
-
+  # ─────────────────────────────────────────────
+  # JOB 1 — Frontend → S3 + CloudFront
+  # ─────────────────────────────────────────────
   deploy-frontend:
     runs-on: ubuntu-latest
 
@@ -45,10 +44,7 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
-
-  # ─────────────────────────────
-  # BACKEND → ECR
-  # ─────────────────────────────
+          echo "✅ Frontend deployed"
 
   deploy-backend:
     runs-on: ubuntu-latest
@@ -76,12 +72,52 @@ jobs:
           cd server
           docker build -t taskflow-backend .
 
-      - name: Tag Docker image
-        run: |
-          docker tag taskflow-backend:latest \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+      - name: Save Docker image
+        run: docker save taskflow-backend > backend.tar
 
-      - name: Push Docker image to ECR
-        run: |
-          docker push \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+      # ── Step 1: Copy image to Bastion (public EC2) ──
+      - name: Copy image to Bastion
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host:     ${{ secrets.BASTION_HOST }}
+          username: ubuntu
+          key:      ${{ secrets.BASTION_SSH_KEY }}
+          source:   "backend.tar"
+          target:   "/home/ubuntu/"
+
+      # ── Step 2: Bastion → copy image to Backend EC2 → deploy ──
+      - name: Deploy via Bastion to Backend EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.BASTION_HOST }}
+          username: ubuntu
+          key:      ${{ secrets.BASTION_SSH_KEY }}
+          script: |
+            # Write private key for backend EC2
+            echo "${{ secrets.PRIVATE_SSH_KEY }}" > ~/.ssh/backend-key.pem
+            chmod 600 ~/.ssh/backend-key.pem
+
+            # Copy docker image from bastion to backend EC2
+            scp -o StrictHostKeyChecking=no \
+              -i ~/.ssh/backend-key.pem \
+              /home/ubuntu/backend.tar \
+              ubuntu@${{ secrets.BACKEND_PRIVATE_IP }}:~/
+
+            # SSH into backend EC2 and deploy
+            ssh -o StrictHostKeyChecking=no \
+              -i ~/.ssh/backend-key.pem \
+              ubuntu@${{ secrets.BACKEND_PRIVATE_IP }} \
+              "docker load < ~/backend.tar && \
+               docker rm -f taskflow-backend || true && \
+               docker run -d \
+                 --name taskflow-backend \
+                 --network host \
+                 --restart always \
+                 --env-file /home/ubuntu/backend.env \
+                 taskflow-backend && \
+               sleep 5 && \
+               curl -f http://localhost:5000/api/health && \
+               echo '✅ Backend deployed and healthy'"
+
+            # Cleanup from bastion
+            rm -f ~/.ssh/backend-key.pem /home/ubuntu/backend.tar
